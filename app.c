@@ -27,13 +27,17 @@
 
 /* GPIO peripheral library */
 #include <em_gpio.h>
-
+#include "src/Timer_Module.h"
 /* Own header */
 #include "app.h"
-
+#include "src/display.h"
+#include "src/ble_mesh_device_type.h"
 /// Flag for indicating DFU Reset must be performed
 static uint8_t boot_to_dfu = 0;
-
+extern uint8_t flag;
+uint8_t button_state=0x00;
+volatile uint8_t buffer_button[1]={0};
+extern volatile uint8_t Gpio_flag;
 /***********************************************************************************************//**
  * @addtogroup Application
  * @{
@@ -138,15 +142,83 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
   switch (evt_id) {
     case gecko_evt_system_boot_id:
     	gecko_cmd_mesh_node_init();
+#if DEVICE_IS_ONOFF_PUBLISHER
+    	displayPrintf(DISPLAY_ROW_NAME,"Publisher");
+#else
+    	displayPrintf(DISPLAY_ROW_NAME,"Subscriber");
+#endif
+      bd_addr adr=gecko_cmd_system_get_bt_address()->address;
+	  char tem[18];
+	  sprintf(tem,"%x:%x:%x:%x:%x:%x",adr.addr[5],adr.addr[4],adr.addr[3],adr.addr[2],adr.addr[1], adr.addr[0]);
+	  displayPrintf(DISPLAY_ROW_BTADDR,tem);
       break;
 
     case gecko_evt_mesh_node_initialized_id:
-      if(!evt->data.evt_mesh_node_initialized.provisioned)
+    	if(evt->data.evt_mesh_node_initialized.provisioned && DeviceUsesClientModel())
+    	{
+    		gecko_cmd_mesh_generic_client_init();
+    	}
+    	else if(evt->data.evt_mesh_node_initialized.provisioned && DeviceUsesServerModel())
+    	{
+    		gecko_cmd_mesh_generic_server_init();
+    	}
+    	if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffPublisher())
+    	{
+    		mesh_lib_init(malloc,free,8);
+    	}
+    	else if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffSubscriber())
+    	{
+    		mesh_lib_init(malloc,free,9);
+    		//mesh_lib_generic_server_register_handler();
+    		//mesh_lib_generic_server_update();
+    		//mesh_lib_generic_server_publish();
+    	}
+    	if(!evt->data.evt_mesh_node_initialized.provisioned)
+    	{
     	  gecko_cmd_mesh_node_start_unprov_beaconing(0x3);   // enable ADV and GATT provisioning bearer
-      break;
+    	  displayPrintf(DISPLAY_ROW_ACTION,"Unprovisioned");
+    	}
+    	  break;
+
+    case gecko_evt_hardware_soft_timer_id:
+    	break;
+
+    case gecko_evt_mesh_node_provisioned_id:
+    	displayPrintf(DISPLAY_ROW_ACTION,"Provisioned");
+    	break;
+
+    case gecko_evt_mesh_node_provisioning_failed_id:
+    	displayPrintf(DISPLAY_ROW_ACTION,"Provision Fail");
+    	break;
+
+    case gecko_evt_mesh_node_provisioning_started_id:
+    	displayPrintf(DISPLAY_ROW_ACTION,"Provisioning");
+        break;
+
+    case gecko_evt_mesh_generic_server_client_request_id:
+    	if(DeviceUsesServerModel())
+    	{
+    		//mesh_lib_generic_server_event_handler();
+    	}
+		break;
+
+    case gecko_evt_mesh_generic_server_state_changed_id:
+    	if(DeviceUsesServerModel())
+    	{
+    		//mesh_lib_generic_server_event_handler();
+    	}
+    	break;
+
+    case gecko_evt_le_connection_opened_id:
+    	displayPrintf(DISPLAY_ROW_CONNECTION,"Connected");
+    	break;
+
+    case gecko_evt_mesh_node_reset_id:
+    	break;
 
     case gecko_evt_le_connection_closed_id:
       /* Check if need to boot to dfu mode */
+    	displayPrintf(DISPLAY_ROW_CONNECTION,"");
       if (boot_to_dfu) {
         /* Enter to DFU OTA mode */
         gecko_cmd_system_reset(2);
@@ -168,6 +240,22 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
       }
       break;
 
+    case gecko_evt_system_external_signal_id:
+		flag=1;
+		if(Gpio_flag == 0)
+		{
+		   //BTSTACK_CHECK_RESPONSE(gecko_cmd_gatt_server_send_characteristic_notification(0xFF, gattdb_button_state, 5, buffer_button));
+			buffer_button[0]=0;
+			button_state=0;
+		}
+		else if(Gpio_flag == 1)
+		{
+			//BTSTACK_CHECK_RESPONSE(gecko_cmd_gatt_server_send_characteristic_notification(0xFF, gattdb_button_state, 5, buffer_button));
+			buffer_button[0]=1;
+			button_state=1;
+			//gecko_cmd_sm_passkey_confirm(evt->data.evt_sm_confirm_passkey.connection,1);
+		}
+		break;
   }
 }
 

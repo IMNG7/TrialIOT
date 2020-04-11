@@ -48,6 +48,14 @@
 #endif
 
 #include "src/ble_mesh_device_type.h"
+#include "src/I2C_Comm.h"
+#include "src/Load_PM.h"
+#include "src/I2C_Comm_Interrupt.h"
+#include "src/State_Machine.h"
+#include "src/Timer_Module.h"
+#include "src/display.h"
+#include "src/gpio.h"
+#include "src/log.h"
 
 /***********************************************************************************************//**
  * @addtogroup Application
@@ -63,7 +71,7 @@ bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
 
 /// Maximum number of simultaneous Bluetooth connections
 #define MAX_CONNECTIONS 2
-
+#define Lowest_Energy_Mode sleepEM3
 /// Heap for Bluetooth stack
 uint8_t bluetooth_stack_heap[DEFAULT_BLUETOOTH_HEAP(MAX_CONNECTIONS) + BTMESH_HEAP_SIZE + 1760];
 
@@ -108,7 +116,8 @@ const gecko_configuration_t config =
   .rf.antenna = GECKO_RF_ANTENNA,   // Select antenna path!
 };
 
-
+uint8_t flag=0;
+uint8_t Gpio_flag=0;
 /*******************************************************************************************************
  * Main function.
  * Instructions to proceed for the mesh assignment.
@@ -122,10 +131,13 @@ const gecko_configuration_t config =
  * 2. Add appropriate initializations in main before while loop.
  * 3. Then proceed to app.c for further instructions.
  *******************************************************************************************************/
+void ButtonHandler();
 int main(void)
 {
+	const SLEEP_EnergyMode_t sleep_mode_Running=Lowest_Energy_Mode;    //Enter the Mode you want the sleep mode to be running
   // Initialize device
   initMcu();
+  logInit();
   // Initialize board
   initBoard();
   // Initialize application
@@ -137,7 +149,21 @@ int main(void)
   linklayer_priorities.scan_max = linklayer_priorities.adv_min + 1;
 
   gecko_stack_init(&config);
-
+  //gecko_init(config);
+  gpioInit();
+  Oscillator_Init(sleep_mode_Running);
+    Letimer_init();
+    //NVIC_EnableIRQ(LETIMER0_IRQn);
+    LETIMER_IntEnable(LETIMER0,LETIMER_IFC_COMP0 | LETIMER_IFC_COMP1 | LETIMER_IFC_UF);
+    Sleep_Init(sleep_mode_Running);
+    LETIMER_Enable(LETIMER0,true);
+    displayInit();
+    GPIO_ExtIntConfig(Push_Button_Port,Push_Button_Pin,6,true,true,true);
+    GPIOINT_Init();
+    GPIOINT_CallbackRegister(Push_Button_Pin,ButtonHandler);
+    GPIO_IntEnable(1<<Push_Button_Pin);
+    NVIC_EnableIRQ(LETIMER0_IRQn);
+    //NVIC_EnableIRQ(GPIO_EVEN_IRQn);
   // Initialize the bgapi classes
   if( DeviceUsesClientModel() ){
 	  gecko_bgapi_classes_init_client_lpn();
@@ -156,4 +182,30 @@ int main(void)
       handle_ecen5823_gecko_event(BGLIB_MSG_ID(evt->header), evt);
     }
   }
+}
+//void GPIO_EVEN_IRQHandler()
+//{
+//	gecko_external_signal(gecko_evt_system_external_signal_id);
+//	if(Gpio_flag == 0 )
+//	{
+//		Gpio_flag =1;
+//	}
+//	else if(Gpio_flag == 1)
+//	{
+//		Gpio_flag =0;
+//	}
+//	GPIO_IntClear(0x40);
+//}
+void ButtonHandler()
+{
+	gecko_external_signal(gecko_evt_system_external_signal_id);
+	if(Gpio_flag == 0 )
+	{
+		Gpio_flag =1;
+	}
+	else if(Gpio_flag == 1)
+	{
+		Gpio_flag =0;
+	}
+	GPIO_IntClear(0x40);
 }
