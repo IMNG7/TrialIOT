@@ -199,13 +199,6 @@ int main(void)
 void ButtonHandler()
 {
 	gecko_external_signal(gecko_evt_system_external_signal_id);
-	if(Gpio_flag == 0 )
-	{
-		Gpio_flag =1;
-	}
-	else if(Gpio_flag == 1)
-	{
-		Gpio_flag =0;
-	}
+	Gpio_flag=1;
 	GPIO_IntClear(0x40);
 }

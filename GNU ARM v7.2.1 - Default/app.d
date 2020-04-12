@@ -87,7 +87,7 @@ app.o: ../app.c \
  D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib\glib/glib_color.h \
  D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib/dmd/dmd.h \
  D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib/em_types.h \
- ../src/ble_mesh_device_type.h
+ ../src/gpio.h ../src/ble_mesh_device_type.h
 
 D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\protocol\bluetooth\bt_mesh\inc\common/bg_types.h:
 
@@ -272,5 +272,7 @@ D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib\
 D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib/dmd/dmd.h:
 
 D:\COLLEGE\ MATERIAL\IOT\Assignment\assignment10-IMNG7\platform\middleware\glib/em_types.h:
+
+../src/gpio.h:
 
 ../src/ble_mesh_device_type.h:
