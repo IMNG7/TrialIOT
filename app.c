@@ -125,7 +125,7 @@ void set_device_name_Publisher(bd_addr *pAddr)
   // create unique device name using the last two bytes of the Bluetooth address
   sprintf(name, "5823PUB %02x:%02x", pAddr->addr[1], pAddr->addr[0]);
   LOG_DEBUG("Device name: '%s'\r\n", name);
-  //displayPrintf(DISPLAY_ROW_NAME,"%s",name);
+  //cdisplayPrintf(DISPLAY_ROW_NAME,"%s",name);
 
   // write device name to the GATT database
   res = gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(name), (uint8 *)name)->result;
