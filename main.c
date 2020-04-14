@@ -158,10 +158,10 @@ int main(void)
     Sleep_Init(sleep_mode_Running);
     LETIMER_Enable(LETIMER0,true);
     displayInit();
-    GPIO_ExtIntConfig(Push_Button_Port,Push_Button_Pin,6,true,true,true);
+    GPIO_ExtIntConfig(Push_Button_Port0,Push_Button_Pin0,6,true,true,true);
     GPIOINT_Init();
-    GPIOINT_CallbackRegister(Push_Button_Pin,ButtonHandler);
-    GPIO_IntEnable(1<<Push_Button_Pin);
+    GPIOINT_CallbackRegister(Push_Button_Pin0,ButtonHandler);
+    GPIO_IntEnable(1<<Push_Button_Pin0);
     NVIC_EnableIRQ(LETIMER0_IRQn);
     //NVIC_EnableIRQ(GPIO_EVEN_IRQn);
   // Initialize the bgapi classes
@@ -183,19 +183,7 @@ int main(void)
     }
   }
 }
-//void GPIO_EVEN_IRQHandler()
-//{
-//	gecko_external_signal(gecko_evt_system_external_signal_id);
-//	if(Gpio_flag == 0 )
-//	{
-//		Gpio_flag =1;
-//	}
-//	else if(Gpio_flag == 1)
-//	{
-//		Gpio_flag =0;
-//	}
-//	GPIO_IntClear(0x40);
-//}
+
 void ButtonHandler()
 {
 	gecko_external_signal(gecko_evt_system_external_signal_id);

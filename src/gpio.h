@@ -11,8 +11,10 @@
 
 #define GPIO_SET_DISPLAY_EXT_COMIN_IMPLEMENTED 	1
 #define GPIO_DISPLAY_SUPPORT_IMPLEMENTED		1
-#define Push_Button_Port 5
-#define Push_Button_Pin 6
+#define Push_Button_Port0 5
+#define Push_Button_Pin0 6
+#define Push_Button_Port1 5
+#define Push_Button_Pin1 7
 void gpioInit();
 void gpioLed0SetOn();
 void gpioLed0SetOff();

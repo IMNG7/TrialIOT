@@ -12,7 +12,9 @@
  * www.silabs.com/about-us/legal/master-software-license-agreement. This
  * software is distributed to you in Source Code format and is governed by the
  * sections of the MSLA applicable to Source Code.
- *
+ * References: 1. Bluetooth Mesh SDK for Light
+ * 			   2. Bluetooth Mesh SDK for Switch
+ * 			   3. https://www.silabs.com/community/wireless/bluetooth/knowledge-base.entry.html/2017/09/14/handling_gpio_interr-A3Ej
  ******************************************************************************/
 
 /* C Standard Library headers */
@@ -200,11 +202,8 @@ void gecko_bgapi_classes_init_client_lpn(void)
  ******************************************************************************/
 void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 {
-	//struct mesh_generic_request req;
-	//struct mesh_generic_state current;
 	uint16_t result;
 	static uint8_t trid=0;
-	//struct gecko_msg_mesh_node_initialized_evt_t *pData;
 	char buf[30];
   if (NULL == evt) {
     return;
@@ -213,7 +212,7 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
   switch (evt_id) {
     case gecko_evt_system_boot_id:
     	//gecko_cmd_flash_ps_erase_all();
-    	if (GPIO_PinInGet(Push_Button_Port, Push_Button_Pin) == 0)
+    	if (GPIO_PinInGet(Push_Button_Port0, Push_Button_Pin0) == 0 || GPIO_PinInGet(Push_Button_Port1, Push_Button_Pin1) == 0)
     {
 
 	  LOG_DEBUG("factory reset push button\r\n");
@@ -225,38 +224,23 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	else
     	{
     		LOG_DEBUG("getting device name\r\n");
-
-    			    	  struct gecko_msg_system_get_bt_address_rsp_t *pAddr = gecko_cmd_system_get_bt_address();
-    			    	  //set device name for publisher
-    			    	  if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffPublisher())
-    			    	  {
-    			    		  set_device_name_Publisher(&pAddr->address);
-    			    	  }
-    			    	  //set device name for subscriber
-    			    	  if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffSubscriber())
-    			    	  {
-    			    		  set_device_name_Subscriber(&pAddr->address);
-
-    			    	  }
-
-    			          result = gecko_cmd_mesh_node_init()->result;
-    			      	  if(result)
-    			      	  {
-    			      		  sprintf(buf, "init failed (0x%x)", result);
-
-    			      	  }
+			struct gecko_msg_system_get_bt_address_rsp_t *pAddr = gecko_cmd_system_get_bt_address();
+			//set device name for publisher
+			if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffPublisher())
+			{
+			  set_device_name_Publisher(&pAddr->address);
+			}
+			//set device name for subscriber
+			if(evt->data.evt_mesh_node_initialized.provisioned && DeviceIsOnOffSubscriber())
+			{
+			  set_device_name_Subscriber(&pAddr->address);
+			}
+			result = gecko_cmd_mesh_node_init()->result;
+			if(result)
+			{
+			  sprintf(buf, "init failed (0x%x)", result);
+			}
     	}
-
-//    	if(result)
-//    	{
-//
-//    	}
-//    	struct gecko_msg_system_get_bt_address_rsp_t *pAddr = gecko_cmd_system_get_bt_address();
-//    		    	  //set device name for publisher
-//    	if(evt->data.evt_mesh_node_initialized.provisioned)
-//    	{
-//    		  	 set_device_name(&pAddr->address);
-//    	}
 #if DEVICE_IS_ONOFF_PUBLISHER
     	displayPrintf(DISPLAY_ROW_NAME,"Publisher");
 #else
@@ -269,14 +253,6 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
       break;
 
     case gecko_evt_mesh_node_initialized_id:
-//    	gecko_cmd_mesh_generic_server_init();
-//    	gecko_cmd_mesh_generic_client_init();
-//    	if(result)
-//    	{
-//    	   LOG_INFO("\n\r Result Failed");
-//    	}
-
-
     	if(evt->data.evt_mesh_node_initialized.provisioned && DeviceUsesClientModel())
     	{
     		displayPrintf(DISPLAY_ROW_ACTION,"Provisioned");
@@ -301,13 +277,7 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     		LOG_INFO("\n\r Mesh Lib Init 9");
     		mesh_lib_init(malloc,free,9);
     		mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,0,client_server_request,NULL,NULL);
-    					//mesh_lib_generic_server_update();
     		mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,0,mesh_generic_state_on_off);
-    		//mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,0,mesh_lib_generic_server_event_handler,mesh_lib_generic_server_event_handler,mesh_lib_generic_server_event_handler);
-    		//mesh_lib_generic_server_update();
-    		//mesh_lib_generic_server_publish();
-    		//MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID;
-    		//MESH_GENERIC_ON_OFF_SERVER_MODEL_ID;
     	}
 //    	if(!evt->data.evt_mesh_node_initialized.provisioned)
 //    	{
@@ -332,7 +302,6 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	  break;
 
     case gecko_evt_hardware_soft_timer_id:
-
 		  switch (evt->data.evt_hardware_soft_timer.handle)
 	      {
 	        case TIMER_ID_FACTORY_RESET:
@@ -422,7 +391,7 @@ void handle_ecen5823_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		struct mesh_generic_request req;
 		const uint32 transtime = 0;
 		req.kind = mesh_generic_request_on_off;
-		req.on_off = GPIO_PinInGet(Push_Button_Port, Push_Button_Pin) ? MESH_GENERIC_ON_OFF_STATE_ON : MESH_GENERIC_ON_OFF_STATE_OFF;
+		req.on_off = GPIO_PinInGet(Push_Button_Port0, Push_Button_Pin0) ? MESH_GENERIC_ON_OFF_STATE_ON : MESH_GENERIC_ON_OFF_STATE_OFF;
 		resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,_elem_index,
 		     trid,
 		     &req,
